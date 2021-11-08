@@ -29,6 +29,7 @@ pub fn main() anyerror!void {
                 "mpv",
                 "--no-terminal",
                 "--force-window",
+                "--script-opts=ytdl_hook-ytdl_path=yt-dlp",
             });
             try argv.append(try std.fmt.allocPrint(&arena.allocator, "--input-ipc-server={s}", .{socket_path}));
             try argv.append("--");
@@ -106,7 +107,7 @@ fn getFiles(alloc: *std.mem.Allocator) ![]const []const u8 {
 }
 
 fn isURL(string: []const u8) bool {
-    var parts_iter = std.mem.split(string, "://");
+    var parts_iter = std.mem.split(u8, string, "://");
     const prefix = parts_iter.next() orelse return false;
     _ = parts_iter.next() orelse return false;
 
