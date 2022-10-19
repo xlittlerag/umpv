@@ -3,7 +3,7 @@ const log = std.log.scoped(.umpv);
 
 pub fn main() anyerror!void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const alloc = &gpa.allocator;
+    const alloc = gpa.allocator();
     defer _ = gpa.deinit();
 
     const files = try getFiles(alloc);
@@ -24,14 +24,14 @@ pub fn main() anyerror!void {
             var arena = std.heap.ArenaAllocator.init(alloc);
             defer arena.deinit();
 
-            var argv = std.ArrayList([]const u8).init(&arena.allocator);
+            var argv = std.ArrayList([]const u8).init(arena.allocator());
             try argv.appendSlice(&.{
                 "mpv",
                 "--no-terminal",
                 "--force-window",
                 "--script-opts=ytdl_hook-ytdl_path=yt-dlp",
             });
-            try argv.append(try std.fmt.allocPrint(&arena.allocator, "--input-ipc-server={s}", .{socket_path}));
+            try argv.append(try std.fmt.allocPrint(arena.allocator(), "--input-ipc-server={s}", .{socket_path}));
             try argv.append("--");
             try argv.appendSlice(files);
 
@@ -40,7 +40,7 @@ pub fn main() anyerror!void {
                 log.debug("    {s}", .{arg});
             }
 
-            const child_process = try std.ChildProcess.init(argv.items, alloc);
+            var child_process = std.ChildProcess.init(argv.items, alloc);
             switch (try child_process.spawnAndWait()) {
                 .Exited => |code| std.process.exit(code),
                 .Signal => |signal| log.warn("Process signaled {}", .{signal}),
@@ -63,7 +63,7 @@ pub fn main() anyerror!void {
     }
 }
 
-fn getSocketPath(alloc: *std.mem.Allocator) ![]const u8 {
+fn getSocketPath(alloc: std.mem.Allocator) ![]const u8 {
     const xdg_runtime_dir = std.process.getEnvVarOwned(alloc, "XDG_RUNTIME_DIR") catch |err| switch (err) {
         error.EnvironmentVariableNotFound => {
             log.err("XDG_RUNTIME_DIR must be defined", .{});
@@ -80,7 +80,7 @@ fn getSocketPath(alloc: *std.mem.Allocator) ![]const u8 {
     return try std.fs.path.join(alloc, &.{ xdg_runtime_dir, "umpv_socket" });
 }
 
-fn getFiles(alloc: *std.mem.Allocator) ![]const []const u8 {
+fn getFiles(alloc: std.mem.Allocator) ![]const []const u8 {
     var args = try std.process.argsAlloc(alloc);
     defer std.process.argsFree(alloc, args);
 
