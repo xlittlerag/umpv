@@ -29,7 +29,7 @@ pub fn main() anyerror!void {
                 "mpv",
                 "--no-terminal",
                 "--force-window",
-                "--script-opts=ytdl_hook-ytdl_path=yt-dlp",
+                "--script-opts=ytdl_hook-ytdl_path=/usr/bin/yt-dlp",
             });
             try argv.append(try std.fmt.allocPrint(arena.allocator(), "--input-ipc-server={s}", .{socket_path}));
             try argv.append("--");
@@ -112,7 +112,7 @@ fn isURL(string: []const u8) bool {
     _ = parts_iter.next() orelse return false;
 
     for (prefix) |char| {
-        if (!(std.ascii.isAlNum(char) or char == '_')) {
+        if (!(std.ascii.isAlphanumeric(char) or char == '_')) {
             return false;
         }
     }
